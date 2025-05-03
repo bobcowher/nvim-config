@@ -45,7 +45,13 @@ require("lazy").setup({
       })
     end
   },
-
+  {
+    "tpope/vim-fugitive",
+     config = function()
+     -- Optional: keybindings
+     vim.keymap.set("n", "<leader>gs", ":Git<CR>", { desc = "Git status" })
+    end
+  },
   -- Treesitter (syntax highlighting)
   {
     "nvim-treesitter/nvim-treesitter",
