@@ -75,3 +75,18 @@ require("lazy").setup({
   },
 })
 
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    local first_arg = vim.fn.argv(0)
+    local is_dir = first_arg and vim.fn.isdirectory(first_arg) == 1
+
+    if is_dir or #vim.fn.argv() == 0 then
+      -- Prevent buffer from being replaced
+      vim.cmd("enew")
+      vim.cmd("NvimTreeToggle")
+    end
+  end
+})
+
+
+
