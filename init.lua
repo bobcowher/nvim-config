@@ -3,6 +3,11 @@ vim.wo.relativenumber = true
 vim.opt.guicursor = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50"
 vim.opt.clipboard = "unnamedplus"
 
+-- Visual mode tab to indent, shift-tab to outdent
+vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
+vim.keymap.set("v", "<S-Tab>", "<gv", { noremap = true, silent = true })
+
+
 -- Load Lazy
 vim.opt.rtp:prepend("~/.config/nvim/lazy/lazy.nvim")
 
@@ -43,8 +48,19 @@ require("lazy").setup({
           { name = "nvim_lsp" },
           { name = "luasnip" },
         }),
+	completion = {
+	  autocomplete = { require("cmp.types").cmp.TriggerEvent.TextChanged },
+	  completeopt = "menu,menuone,noinsert",
+	  keyword_length = 1,
+	  entries_limit = 3, -- 🔥 Limit to top 3 results
+	},
       })
-    end
+	-- After cmp.setup(...)
+	local cmp_autopairs = require("nvim-autopairs.completion.cmp")
+	local cmp = require("cmp")
+
+	cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
+  end
   },
   {
     "tpope/vim-fugitive",
