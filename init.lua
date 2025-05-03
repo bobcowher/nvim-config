@@ -13,6 +13,7 @@ require("lazy").setup({
     "neovim/nvim-lspconfig",
     config = function()
       require("lspconfig").clangd.setup {}
+      require("lspconfig").pyright.setup {}
     end
   },
 
@@ -73,6 +74,15 @@ require("lazy").setup({
       require("nvim-tree").setup({})
     end
   },
+-- Auto-pairing
+{
+  "windwp/nvim-autopairs",
+  event = "InsertEnter",
+  config = function()
+    require("nvim-autopairs").setup({})
+  end
+},
+
 })
 
 vim.api.nvim_create_autocmd("VimEnter", {
