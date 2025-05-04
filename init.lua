@@ -12,7 +12,14 @@ vim.keymap.set("v", "<S-Tab>", "<gv", { noremap = true, silent = true })
 vim.opt.rtp:prepend("~/.config/nvim/lazy/lazy.nvim")
 
 require("lazy").setup({
-
+{
+  "folke/tokyonight.nvim",
+  lazy = false,
+  priority = 1000,
+  config = function()
+    vim.cmd("colorscheme tokyonight-night") -- or tokyonight-storm
+  end
+},
   -- Language Server Protocol
   {
     "neovim/nvim-lspconfig",
