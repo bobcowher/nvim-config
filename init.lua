@@ -7,6 +7,8 @@ vim.opt.clipboard = "unnamedplus"
 vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
 vim.keymap.set("v", "<S-Tab>", "<gv", { noremap = true, silent = true })
 
+-- Python Execute Code
+dofile(vim.fn.stdpath("config") .. "/python_runner.lua")
 
 -- Load Lazy
 vim.opt.rtp:prepend("~/.config/nvim/lazy/lazy.nvim")
@@ -24,8 +26,20 @@ require("lazy").setup({
   {
     "neovim/nvim-lspconfig",
     config = function()
-      require("lspconfig").clangd.setup {}
-      require("lspconfig").pyright.setup {}
+	require("lspconfig").clangd.setup {}
+	require("lspconfig").pyright.setup({
+	  settings = {
+	    python = {
+	      pythonPath = vim.env.CONDA_PREFIX and (vim.env.CONDA_PREFIX .. "/bin/python") or "python3",
+	      analysis = {
+		autoSearchPaths = true,
+		diagnosticMode = "openFilesOnly",
+		useLibraryCodeForTypes = true,
+	      },
+	    },
+	  },
+	})
+
     end
   },
 
