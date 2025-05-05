@@ -119,6 +119,26 @@ require("lazy").setup({
     require("nvim-autopairs").setup({})
   end
 },
+{
+  "lewis6991/gitsigns.nvim",
+  event = "BufReadPre",
+  dependencies = { "nvim-lua/plenary.nvim" },
+  config = function()
+    local gitsigns = require("gitsigns")
+    vim.api.nvim_create_autocmd("BufWinEnter", {
+      callback = function(args)
+        local buf = args.buf
+        local ft = vim.api.nvim_buf_get_option(buf, "filetype")
+        -- Only attach if this is a fugitive buffer or gitcommit/diff
+        if ft == "fugitive" or ft == "gitcommit" or ft == "diff" then
+          gitsigns.attach(buf)
+        else
+          gitsigns.detach(buf)
+        end
+      end
+    })
+  end,
+},
 
 })
 
