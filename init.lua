@@ -9,6 +9,7 @@ vim.keymap.set("v", "<S-Tab>", "<gv", { noremap = true, silent = true })
 
 -- Python Execute Code
 dofile(vim.fn.stdpath("config") .. "/python_runner.lua")
+dofile(vim.fn.stdpath("config") .. "/build.lua")
 
 -- Load Lazy
 vim.opt.rtp:prepend("~/.config/nvim/lazy/lazy.nvim")
