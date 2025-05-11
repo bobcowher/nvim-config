@@ -6,6 +6,8 @@ vim.opt.clipboard = "unnamedplus"
 -- Visual mode tab to indent, shift-tab to outdent
 vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
 vim.keymap.set("v", "<S-Tab>", "<gv", { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<C-t>', '<ESC>:NvimTreeToggle<CR>', { noremap = true, silent = true })
+
 
 -- Python Execute Code
 dofile(vim.fn.stdpath("config") .. "/python_runner.lua")
@@ -62,8 +64,9 @@ require("lazy").setup({
           end,
         },
         mapping = cmp.mapping.preset.insert({
-          ["<Tab>"] = cmp.mapping.select_next_item(),
+	  -- ["<CR>"] = cmp.mapping.select_next_item(),
           ["<S-Tab>"] = cmp.mapping.select_prev_item(),
+          ["<Tab>"] = cmp.mapping.confirm({ select = true }),
           ["<CR>"] = cmp.mapping.confirm({ select = true }),
         }),
         sources = cmp.config.sources({
@@ -109,7 +112,11 @@ require("lazy").setup({
     'nvim-tree/nvim-tree.lua',
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
-      require("nvim-tree").setup({})
+      require("nvim-tree").setup({
+				view = {
+					width = 45,
+				}
+			})
     end
   },
 -- Auto-pairing
