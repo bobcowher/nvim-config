@@ -36,7 +36,7 @@ vim.keymap.set("n", "<C-b>", function()
   ---------------------------------------------------------------------------
   -- 3. create a fresh bottom split and run ./build.sh ----------------------
   ---------------------------------------------------------------------------
-  vim.cmd("botright split | resize 15 | enew")
+  vim.cmd("botright split | resize 10 | enew")
   build_buf = vim.api.nvim_get_current_buf()
   vim.b.build_runner = true                           -- <── tag it
 
