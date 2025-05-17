@@ -6,10 +6,24 @@ vim.opt.clipboard = "unnamedplus"
 -- Visual mode tab to indent, shift-tab to outdent
 vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
 vim.keymap.set("v", "<S-Tab>", "<gv", { noremap = true, silent = true })
+
+-- Show Errors -- 
+vim.keymap.set("n", "<S-e>", function()
+  vim.diagnostic.open_float(nil, { focusable = false, scope = "cursor" })
+end, { desc = "Show diagnostic under cursor" })
+
+-- Comments --
+-- Normal mode
+vim.keymap.set("n", "<C-_>", "gcc", { remap = true, desc = "Toggle comment line" })
+
+-- Visual mode
+vim.keymap.set("v", "<C-_>", "gc", { remap = true, desc = "Toggle comment selection" })
+
+-- neovim tree toggle --
 vim.api.nvim_set_keymap('n', '<C-t>', '<ESC>:NvimTreeToggle<CR>', { noremap = true, silent = true })
 
 
--- Python Execute Code
+-- Python Execute Code 
 dofile(vim.fn.stdpath("config") .. "/python_runner.lua")
 dofile(vim.fn.stdpath("config") .. "/build.lua")
 
@@ -29,7 +43,9 @@ require("lazy").setup({
   {
     "neovim/nvim-lspconfig",
     config = function()
-	require("lspconfig").clangd.setup {}
+	require("lspconfig").clangd.setup({
+		cmd = { "clangd", "--background-index", "--clang-tidy", "--completion-style=detailed" },			
+	})
 	require("lspconfig").pyright.setup({
 	  settings = {
 	    python = {
@@ -87,6 +103,13 @@ require("lazy").setup({
 	cmp.event:on("confirm_done", cmp_autopairs.on_confirm_done())
   end
   },
+{
+  "numToStr/Comment.nvim",
+  event = "VeryLazy",
+  config = function()
+    require("Comment").setup()
+  end,
+},
   {
     "tpope/vim-fugitive",
      config = function()
@@ -102,7 +125,10 @@ require("lazy").setup({
       require("nvim-treesitter.configs").setup({
         ensure_installed = { "lua", "python", "bash", "json", "c", "cpp" },
         highlight = { enable = true },
-        indent = { enable = true },
+        indent = { 
+	 enable = true,
+	 disable = {"c", "cpp"},
+	},
       })
     end
   },
