@@ -22,6 +22,9 @@ vim.keymap.set("v", "<C-_>", "gc", { remap = true, desc = "Toggle comment select
 -- neovim tree toggle --
 vim.api.nvim_set_keymap('n', '<C-t>', '<ESC>:NvimTreeToggle<CR>', { noremap = true, silent = true })
 
+--- Launch OpenAI -- 
+vim.api.nvim_set_keymap('n', '<C-S-g>', '<ESC>:GpChatToggle split<CR>', { noremap = true, silent = true })
+
 
 -- Python Execute Code 
 dofile(vim.fn.stdpath("config") .. "/python_runner.lua")
@@ -38,6 +41,17 @@ require("lazy").setup({
   config = function()
     vim.cmd("colorscheme tokyonight-night") -- or tokyonight-storm
   end
+},
+{
+    "robitx/gp.nvim",
+    config = function()
+        local conf = {
+            -- For customization, refer to Install > Configuration in the Documentation/Readme
+        }
+        require("gp").setup(conf)
+
+        -- Setup shortcuts here (see Usage > Shortcuts in the Documentation/Readme)
+    end,
 },
   -- Language Server Protocol
   {
