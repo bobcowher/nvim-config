@@ -2,6 +2,7 @@ vim.wo.relativenumber = true
 
 vim.opt.guicursor = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50"
 vim.opt.clipboard = "unnamedplus"
+vim.opt.number = true
 
 -- Visual mode tab to indent, shift-tab to outdent
 vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
@@ -74,6 +75,11 @@ require("lazy").setup({
 	})
 
     end
+  },
+-- Lazy.nvim
+  {
+    "mg979/vim-visual-multi",
+    branch = "master"
   },
 
   -- Completion
