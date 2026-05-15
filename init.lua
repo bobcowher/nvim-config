@@ -54,9 +54,26 @@ require("lazy").setup({
         -- Setup shortcuts here (see Usage > Shortcuts in the Documentation/Readme)
     end,
 },
+  -- Mason (LSP installer)
+  {
+    "williamboman/mason.nvim",
+    config = function()
+      require("mason").setup()
+    end
+  },
+  {
+    "williamboman/mason-lspconfig.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    config = function()
+      require("mason-lspconfig").setup({
+        ensure_installed = { "clangd", "pyright", "lemminx" }
+      })
+    end
+  },
   -- Language Server Protocol
   {
     "neovim/nvim-lspconfig",
+    dependencies = { "williamboman/mason-lspconfig.nvim" },
     config = function()
 	require("lspconfig").clangd.setup({
 		cmd = { "clangd", "--background-index", "--clang-tidy", "--completion-style=detailed" },			
@@ -73,6 +90,20 @@ require("lazy").setup({
 	    },
 	  },
 	})
+	-- XML LSP using LemMinX via mason or manual install
+	local lemminx_cmd = vim.fn.expand("~/.local/share/nvim/mason/bin/lemminx")
+	if vim.fn.executable(lemminx_cmd) == 1 then
+		require("lspconfig").lemminx.setup({
+			cmd = { lemminx_cmd },
+			settings = {
+				xml = {
+					validation = {
+						noGrammar = "ignore"
+					}
+				}
+			}
+		})
+	end
 
     end
   },
@@ -143,11 +174,11 @@ require("lazy").setup({
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "python", "bash", "json", "c", "cpp" },
+        ensure_installed = { "lua", "python", "bash", "json", "c", "cpp", "xml", "astro" },
         highlight = { enable = true },
-        indent = { 
+        indent = {
 	 enable = true,
-	 disable = {"c", "cpp"},
+	 disable = {"c", "cpp", "astro"},
 	},
       })
     end
@@ -171,6 +202,25 @@ require("lazy").setup({
   event = "InsertEnter",
   config = function()
     require("nvim-autopairs").setup({})
+  end
+},
+-- XML tag auto-closing
+{
+  "windwp/nvim-ts-autotag",
+  dependencies = { "nvim-treesitter/nvim-treesitter" },
+  config = function()
+    require("nvim-ts-autotag").setup({
+      opts = {
+        enable_close = true,
+        enable_rename = true,
+        enable_close_on_slash = true
+      },
+      per_filetype = {
+        xml = {
+          enable_close = true
+        }
+      }
+    })
   end
 },
 {
