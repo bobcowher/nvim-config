@@ -66,7 +66,7 @@ require("lazy").setup({
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = { "clangd", "pyright", "lemminx" }
+        ensure_installed = { "clangd", "pyright", "lemminx", "rust_analyzer", "taplo" }
       })
     end
   },
@@ -104,8 +104,31 @@ require("lazy").setup({
 			}
 		})
 	end
+	require("lspconfig").taplo.setup({})
 
     end
+  },
+  {
+    "mrcjkb/rustaceanvim",
+    version = "^9",
+    lazy = false,
+    init = function()
+      vim.g.rustaceanvim = {
+        server = {
+          standalone = false,
+          default_settings = {
+            ["rust-analyzer"] = {
+              cargo = {
+                allFeatures = true,
+              },
+              check = {
+                command = "clippy",
+              },
+            },
+          },
+        },
+      }
+    end,
   },
 -- Lazy.nvim
   {
@@ -174,7 +197,7 @@ require("lazy").setup({
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "python", "bash", "json", "c", "cpp", "xml", "astro" },
+        ensure_installed = { "lua", "python", "bash", "json", "c", "cpp", "xml", "astro", "rust", "toml" },
         highlight = { enable = true },
         indent = {
 	 enable = true,
@@ -258,5 +281,3 @@ vim.api.nvim_create_autocmd("VimEnter", {
     end
   end
 })
-
-
