@@ -1,5 +1,5 @@
 -- ~/.config/nvim/build.lua  —  single clean build pane
-vim.keymap.set("n", "<C-b>", function()
+vim.keymap.set("n", "<C-S-b>", function()
   local term_cmd  = "./build.sh"
   local orig_win  = vim.api.nvim_get_current_win()
 

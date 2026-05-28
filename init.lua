@@ -75,37 +75,38 @@ require("lazy").setup({
     "neovim/nvim-lspconfig",
     dependencies = { "williamboman/mason-lspconfig.nvim" },
     config = function()
-	require("lspconfig").clangd.setup({
-		cmd = { "clangd", "--background-index", "--clang-tidy", "--completion-style=detailed" },			
-	})
-	require("lspconfig").pyright.setup({
-	  settings = {
-	    python = {
-	      pythonPath = vim.env.CONDA_PREFIX and (vim.env.CONDA_PREFIX .. "/bin/python") or "python3",
-	      analysis = {
-		autoSearchPaths = true,
-		diagnosticMode = "openFilesOnly",
-		useLibraryCodeForTypes = true,
-	      },
-	    },
-	  },
-	})
-	-- XML LSP using LemMinX via mason or manual install
-	local lemminx_cmd = vim.fn.expand("~/.local/share/nvim/mason/bin/lemminx")
-	if vim.fn.executable(lemminx_cmd) == 1 then
-		require("lspconfig").lemminx.setup({
-			cmd = { lemminx_cmd },
-			settings = {
-				xml = {
-					validation = {
-						noGrammar = "ignore"
-					}
-				}
-			}
-		})
-	end
-	require("lspconfig").taplo.setup({})
+      vim.lsp.config('clangd', {
+        cmd = { "clangd", "--background-index", "--clang-tidy", "--completion-style=detailed" },
+      })
 
+      vim.lsp.config('pyright', {
+        settings = {
+          python = {
+            pythonPath = vim.env.CONDA_PREFIX and (vim.env.CONDA_PREFIX .. "/bin/python") or "python3",
+            analysis = {
+              autoSearchPaths = true,
+              diagnosticMode = "openFilesOnly",
+              useLibraryCodeForTypes = true,
+            },
+          },
+        },
+      })
+
+      local lemminx_cmd = vim.fn.expand("~/.local/share/nvim/mason/bin/lemminx")
+      if vim.fn.executable(lemminx_cmd) == 1 then
+        vim.lsp.config('lemminx', {
+          cmd = { lemminx_cmd },
+          settings = {
+            xml = {
+              validation = { noGrammar = "ignore" }
+            }
+          }
+        })
+        vim.lsp.enable('lemminx')
+      end
+
+      -- rust_analyzer is managed by rustaceanvim
+      vim.lsp.enable({ 'clangd', 'pyright', 'taplo' })
     end
   },
   {
@@ -264,6 +265,14 @@ require("lazy").setup({
         end
       end
     })
+  end,
+},
+
+{
+  "bobcowher/neovim-graphics-viewer",
+  tag = "v1.0.0",
+  config = function()
+    require("nvim-gfx").setup()
   end,
 },
 
