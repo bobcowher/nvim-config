@@ -16,9 +16,11 @@ end, { desc = "Show diagnostic under cursor" })
 -- Comments --
 -- Normal mode
 vim.keymap.set("n", "<C-_>", "gcc", { remap = true, desc = "Toggle comment line" })
+vim.keymap.set("n", "<C-/>", "gcc", { remap = true, desc = "Toggle comment line" })
 
 -- Visual mode
 vim.keymap.set("v", "<C-_>", "gc", { remap = true, desc = "Toggle comment selection" })
+vim.keymap.set("v", "<C-/>", "gc", { remap = true, desc = "Toggle comment selection" })
 
 -- neovim tree toggle --
 vim.api.nvim_set_keymap('n', '<C-t>', '<ESC>:NvimTreeToggle<CR>', { noremap = true, silent = true })
@@ -270,7 +272,7 @@ require("lazy").setup({
 
 {
   "bobcowher/neovim-graphics-viewer",
-  tag = "v1.0.0",
+  tag = "v1.0.4",
   config = function()
     require("nvim-gfx").setup()
   end,
