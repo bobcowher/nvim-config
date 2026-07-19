@@ -163,7 +163,22 @@ require("lazy").setup({
           ["<CR>"] = cmp.mapping.confirm({ select = true }),
         }),
         sources = cmp.config.sources({
-          { name = "nvim_lsp" },
+          {
+            name = "nvim_lsp",
+            entry_filter = function(entry)
+              local item = entry.completion_item
+              local text = item.textEdit and item.textEdit.newText or item.insertText
+              if text and text:find("\n") then
+                -- Strip multi-line override stub to just the method name
+                if item.textEdit then
+                  item.textEdit.newText = item.label
+                end
+                item.insertText = item.label
+                item.insertTextFormat = 1  -- PlainText
+              end
+              return true
+            end,
+          },
           { name = "luasnip" },
         }),
 	completion = {
@@ -204,7 +219,7 @@ require("lazy").setup({
         highlight = { enable = true },
         indent = {
 	 enable = true,
-	 disable = {"c", "cpp", "astro"},
+	 disable = {"c", "cpp", "astro", "python"},
 	},
       })
     end
@@ -270,15 +285,34 @@ require("lazy").setup({
   end,
 },
 
-{
-  "bobcowher/neovim-graphics-viewer",
-  tag = "v1.0.4",
-  config = function()
-    require("nvim-gfx").setup()
-  end,
-},
+  {
+    "bobcowher/neovim-graphics-viewer",
+    tag = "v1.0.4",
+    config = function()
+      require("nvim-gfx").setup()
+    end,
+  },
+  {
+    dir = "~/rustprojects/neovim-jupyter",
+    build = "./build.sh",
+    config = function()
+      require("nvim-jupyter").setup()
+    end,
+  },
+
 
 })
+
+vim.lsp.config('*', {
+  flags = { debounce_text_changes = 50 }
+})
+
+vim.diagnostic.config({ update_in_insert = true })
+
+vim.api.nvim_create_user_command("LspRestart", function()
+  vim.lsp.stop_client(vim.lsp.get_clients({ bufnr = 0 }))
+  vim.cmd("e")
+end, {})
 
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
