@@ -179,6 +179,7 @@ require("lazy").setup({
               return true
             end,
           },
+          { name = "jupyter" },
           { name = "luasnip" },
         }),
 	completion = {
