@@ -32,6 +32,7 @@ vim.api.nvim_set_keymap('n', '<C-S-g>', '<ESC>:GpChatToggle split<CR>', { norema
 -- Python Execute Code 
 dofile(vim.fn.stdpath("config") .. "/python_runner.lua")
 dofile(vim.fn.stdpath("config") .. "/build.lua")
+dofile(vim.fn.stdpath("config") .. "/runner_close.lua")
 
 -- Load Lazy
 vim.opt.rtp:prepend("~/.config/nvim/lazy/lazy.nvim")
@@ -89,6 +90,7 @@ require("lazy").setup({
               autoSearchPaths = true,
               diagnosticMode = "openFilesOnly",
               useLibraryCodeForTypes = true,
+              autoImportCompletions = false,
             },
           },
         },
@@ -186,7 +188,6 @@ require("lazy").setup({
 	  autocomplete = { require("cmp.types").cmp.TriggerEvent.TextChanged },
 	  completeopt = "menu,menuone,noinsert",
 	  keyword_length = 1,
-	  entries_limit = 3, -- 🔥 Limit to top 3 results
 	},
       })
 	-- After cmp.setup(...)
@@ -213,15 +214,24 @@ require("lazy").setup({
   -- Treesitter (syntax highlighting)
   {
     "nvim-treesitter/nvim-treesitter",
+    branch = "main",
+    lazy = false,
     build = ":TSUpdate",
     config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "python", "bash", "json", "c", "cpp", "xml", "astro", "rust", "toml" },
-        highlight = { enable = true },
-        indent = {
-	 enable = true,
-	 disable = {"c", "cpp", "astro", "python"},
-	},
+      local parsers = { "lua", "python", "bash", "json", "c", "cpp", "xml", "astro", "rust", "toml" }
+      require("nvim-treesitter").install(parsers)
+
+      local filetypes = { "lua", "python", "sh", "json", "c", "cpp", "xml", "astro", "rust", "toml" }
+      local indent_disabled = { c = true, cpp = true, astro = true, python = true }
+
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = filetypes,
+        callback = function(args)
+          vim.treesitter.start(args.buf)
+          if not indent_disabled[vim.bo[args.buf].filetype] then
+            vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          end
+        end,
       })
     end
   },
@@ -286,6 +296,19 @@ require("lazy").setup({
   end,
 },
 
+  {
+    "ray-x/lsp_signature.nvim",
+    event = "InsertEnter",
+    config = function()
+      require("lsp_signature").setup({
+        bind = true,
+        auto_attach = true,
+        hint_enable = false,
+        floating_window = true,
+        handler_opts = { border = "rounded" },
+      })
+    end,
+  },
   {
     "bobcowher/neovim-graphics-viewer",
     tag = "v1.0.4",

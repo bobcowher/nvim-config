@@ -1,3 +1,15 @@
+-- Find the runner window/buffer, if one is open.
+local function find_runner()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.b[buf].term_run == true then
+      return win, buf
+    end
+  end
+  return nil, nil
+end
+
+
 vim.keymap.set("n", "<C-d>", function()
   local filename = vim.fn.expand("%:p")  -- full file path
   if filename == "" then return end
@@ -15,26 +27,19 @@ vim.keymap.set("n", "<C-d>", function()
     python_cmd = vim.env.CONDA_PREFIX .. "/bin/python"
   end
 
-  -- Check for existing terminal buffer with this file
-  local term_buf_name = "TermRun:" .. filename
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(buf) then
-      local name = vim.api.nvim_buf_get_name(buf)
-      if name:find(term_buf_name, 1, true) then
-        vim.cmd("buffer " .. buf)  -- switch to it
-        vim.cmd("startinsert")
-        return
-      end
-    end
+  -- Reuse the existing runner window if one is open; otherwise open a split.
+  local win, old_buf = find_runner()
+  if win then
+    vim.api.nvim_set_current_win(win)
+    vim.cmd("enew")
+    pcall(vim.api.nvim_buf_delete, old_buf, { force = true })
+  else
+    vim.cmd("botright split")
+    vim.cmd("resize 15")
+    vim.cmd("enew")
   end
 
--- Open a 15-line bottom split and run Python
-vim.cmd("botright split")
-vim.cmd("resize 15")
-vim.cmd("enew")
-vim.api.nvim_buf_set_name(0, term_buf_name)
-vim.cmd("terminal " .. python_cmd .. " " .. filename)
-vim.cmd("startinsert")
-	
-end, { desc = "Run Python (reused terminal)", noremap = true, silent = true })
-
+  vim.cmd("terminal " .. python_cmd .. " " .. filename)
+  vim.b.term_run = true
+  vim.cmd("startinsert")
+end, { desc = "Run Python (reused runner window)", noremap = true, silent = true })
