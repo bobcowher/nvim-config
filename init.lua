@@ -3,6 +3,7 @@ vim.wo.relativenumber = true
 vim.opt.guicursor = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50"
 vim.opt.clipboard = "unnamedplus"
 vim.opt.number = true
+vim.opt.signcolumn = "yes"
 
 -- Visual mode tab to indent, shift-tab to outdent
 vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
@@ -76,8 +77,14 @@ require("lazy").setup({
   -- Language Server Protocol
   {
     "neovim/nvim-lspconfig",
-    dependencies = { "williamboman/mason-lspconfig.nvim" },
+    dependencies = {
+      "williamboman/mason-lspconfig.nvim",
+      "hrsh7th/cmp-nvim-lsp",
+    },
     config = function()
+      local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      vim.lsp.config("*", { capabilities = capabilities })
+
       vim.lsp.config('clangd', {
         cmd = { "clangd", "--background-index", "--clang-tidy", "--completion-style=detailed" },
       })
@@ -311,7 +318,7 @@ require("lazy").setup({
   },
   {
     "bobcowher/neovim-graphics-viewer",
-    tag = "v1.0.4",
+    tag = "v1.1.0",
     config = function()
       require("nvim-gfx").setup()
     end,
