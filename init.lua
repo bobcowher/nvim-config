@@ -44,6 +44,14 @@ require("lazy").setup({
   lazy = false,
   priority = 1000,
   config = function()
+    require("tokyonight").setup({
+      on_highlights = function(hl)
+        -- Changed lines in diffs: tokyonight's DiffChange (#1f2231) is barely
+        -- distinguishable from the background. Amber, as strong as add/delete.
+        hl.DiffChange = { bg = "#4a3f1f" }
+        hl.DiffText = { bg = "#7a6324" } -- the changed words within the line
+      end,
+    })
     vim.cmd("colorscheme tokyonight-night") -- or tokyonight-storm
   end
 },
