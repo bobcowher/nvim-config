@@ -1,9 +1,15 @@
+-- Leader must be set before lazy.setup and any <leader> mappings
+vim.g.mapleader = " "
+vim.g.maplocalleader = " "
+
 vim.wo.relativenumber = true
 
 vim.opt.guicursor = "n-v-c:block,i-ci-ve:ver25,r-cr:hor20,o:hor50"
 vim.opt.clipboard = "unnamedplus"
 vim.opt.number = true
 vim.opt.signcolumn = "yes"
+vim.opt.tabstop = 4     -- display width of a literal tab
+vim.opt.shiftwidth = 4  -- width of >>, <<, and auto-indent
 
 -- Visual mode tab to indent, shift-tab to outdent
 vim.keymap.set("v", "<Tab>", ">gv", { noremap = true, silent = true })
@@ -78,7 +84,11 @@ require("lazy").setup({
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-        ensure_installed = { "clangd", "pyright", "lemminx", "rust_analyzer", "taplo" }
+        ensure_installed = { "clangd", "basedpyright", "pyright", "lemminx", "rust_analyzer", "taplo" },
+        -- Servers are enabled explicitly below. Auto-enable would start every
+        -- installed server: basedpyright alongside pyright, and a second
+        -- rust_analyzer alongside rustaceanvim's.
+        automatic_enable = false,
       })
     end
   },
@@ -97,19 +107,81 @@ require("lazy").setup({
         cmd = { "clangd", "--background-index", "--clang-tidy", "--completion-style=detailed" },
       })
 
-      vim.lsp.config('pyright', {
-        settings = {
-          python = {
-            pythonPath = vim.env.CONDA_PREFIX and (vim.env.CONDA_PREFIX .. "/bin/python") or "python3",
-            analysis = {
-              autoSearchPaths = true,
-              diagnosticMode = "openFilesOnly",
-              useLibraryCodeForTypes = true,
-              autoImportCompletions = false,
+      -- Python language server. Measured with bench/run.sh; see bench/README.md.
+      --   NVIM_PYTHON_LS=pyright        (default) pyright with background analysis
+      --   NVIM_PYTHON_LS=pyright-plain  stock pyright: rollback, ~1.5s completion lag
+      --   NVIM_PYTHON_LS=basedpyright   for comparison: slower diagnostics when measured
+      local python_ls = vim.env.NVIM_PYTHON_LS or "pyright"
+      local python_path = vim.env.CONDA_PREFIX and (vim.env.CONDA_PREFIX .. "/bin/python") or "python3"
+      local python_analysis = {
+        autoSearchPaths = true,
+        diagnosticMode = "openFilesOnly",
+        useLibraryCodeForTypes = true,
+        autoImportCompletions = false,
+      }
+      local pyright_dir = vim.fn.stdpath("data") .. "/mason/packages/pyright/node_modules/pyright"
+      if python_ls == "pyright" and (vim.fn.isdirectory(pyright_dir) == 0 or vim.fn.executable("node") == 0) then
+        python_ls = "pyright-plain"
+      end
+
+      -- Why background analysis matters: without it, pyright type-checks the
+      -- whole file on its main thread after every keystroke (~1s on
+      -- torch/transformers code) and completion requests wait behind that.
+      -- Getting it to work in Neovim takes four things VS Code's client does:
+      --   1. --cancellationReceive=file:<name>, or pyright never starts the worker
+      --   2. the cancellation folder must exist; the *client* creates it. If it's
+      --      missing, cancellation fails silently and the worker fully checks
+      --      every stale keystroke version (diagnostics lag ~5s)
+      --   3. push diagnostics: pull returns stale results in background mode
+      --   4. (Mason's npm pyright only) pyright-bg.js, so the worker starts at all
+      local cancel_name = "nvim-" .. vim.fn.getpid()
+      local cancel_flag = "--cancellationReceive=file:" .. cancel_name
+      if python_ls ~= "pyright-plain" then
+        local cancel_dir = vim.fs.joinpath(vim.uv.os_tmpdir(), "python-languageserver-cancellation", cancel_name)
+        vim.fn.mkdir(cancel_dir, "p")
+        vim.api.nvim_create_autocmd("VimLeavePre", {
+          callback = function() vim.fn.delete(cancel_dir, "rf") end,
+        })
+      end
+
+      -- The main thread keeps its own type cache, so the first completion that
+      -- touches a heavy import (transformers: ~4s) is slow once per session.
+      -- One throwaway completion on attach pays that while you're still reading.
+      local function prewarm(client, bufnr)
+        client:request("textDocument/completion", {
+          textDocument = { uri = vim.uri_from_bufnr(bufnr) },
+          position = { line = vim.api.nvim_buf_line_count(bufnr) - 1, character = 0 },
+        }, function() end, bufnr)
+      end
+
+      if python_ls == "basedpyright" then
+        vim.lsp.config('basedpyright', {
+          cmd = { "basedpyright-langserver", "--stdio", cancel_flag },
+          init_options = { disablePullDiagnostics = true },
+          on_attach = prewarm,
+          settings = {
+            python = { pythonPath = python_path },
+            basedpyright = {
+              analysis = vim.tbl_extend("force", python_analysis, {
+                typeCheckingMode = "standard", -- basedpyright defaults to the much stricter "recommended"
+              }),
             },
           },
-        },
-      })
+        })
+      else
+        if python_ls == "pyright" then
+          vim.lsp.config('pyright', {
+            cmd = { "node", vim.fn.stdpath("config") .. "/pyright-bg.js", "--stdio", cancel_flag },
+            cmd_env = { PYRIGHT_DIR = pyright_dir },
+            init_options = { disablePullDiagnostics = true },
+            on_attach = prewarm,
+          })
+        end
+        python_ls = "pyright"
+        vim.lsp.config('pyright', {
+          settings = { python = { pythonPath = python_path, analysis = python_analysis } },
+        })
+      end
 
       local lemminx_cmd = vim.fn.expand("~/.local/share/nvim/mason/bin/lemminx")
       if vim.fn.executable(lemminx_cmd) == 1 then
@@ -125,7 +197,7 @@ require("lazy").setup({
       end
 
       -- rust_analyzer is managed by rustaceanvim
-      vim.lsp.enable({ 'clangd', 'pyright', 'taplo' })
+      vim.lsp.enable({ 'clangd', python_ls, 'taplo' })
     end
   },
   {
@@ -290,25 +362,64 @@ require("lazy").setup({
     })
   end
 },
+-- Git: hunks in the gutter of the buffer you're editing
 {
   "lewis6991/gitsigns.nvim",
   event = "BufReadPre",
-  dependencies = { "nvim-lua/plenary.nvim" },
-  config = function()
-    local gitsigns = require("gitsigns")
-    vim.api.nvim_create_autocmd("BufWinEnter", {
-      callback = function(args)
-        local buf = args.buf
-        local ft = vim.api.nvim_buf_get_option(buf, "filetype")
-        -- Only attach if this is a fugitive buffer or gitcommit/diff
-        if ft == "fugitive" or ft == "gitcommit" or ft == "diff" then
-          gitsigns.attach(buf)
-        else
-          gitsigns.detach(buf)
-        end
+  opts = {
+    on_attach = function(bufnr)
+      local gs = require("gitsigns")
+      local function map(mode, lhs, rhs, desc)
+        vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, desc = desc })
       end
-    })
-  end,
+
+      -- Jump between hunks (falls back to native ]c/[c inside diff mode)
+      map("n", "]c", function()
+        if vim.wo.diff then vim.cmd.normal({ "]c", bang = true }) else gs.nav_hunk("next") end
+      end, "Next hunk")
+      map("n", "[c", function()
+        if vim.wo.diff then vim.cmd.normal({ "[c", bang = true }) else gs.nav_hunk("prev") end
+      end, "Prev hunk")
+
+      map("n", "<leader>gp", gs.preview_hunk, "Preview hunk")
+      map("n", "<leader>ga", gs.stage_hunk, "Stage/unstage hunk")
+      map("n", "<leader>gr", gs.reset_hunk, "Revert hunk")
+      map("v", "<leader>ga", function() gs.stage_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, "Stage selected lines")
+      map("v", "<leader>gr", function() gs.reset_hunk({ vim.fn.line("."), vim.fn.line("v") }) end, "Revert selected lines")
+      map("n", "<leader>gR", gs.reset_buffer, "Revert whole file")
+      map("n", "<leader>gb", function() gs.blame_line({ full = true }) end, "Blame line")
+    end,
+  },
+},
+
+-- Git: VS Code-style review of all changed files / branches / history
+{
+  "dlyongemallo/diffview-plus.nvim",
+  version = "*",
+  cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewFileHistory", "DiffviewToggle" },
+  opts = {
+    hooks = {
+      -- Show the whole file, not just changes with 6 lines of context.
+      -- zi in a diff window turns the folds back on.
+      -- nowrap keeps the panes aligned: the two panes differ in width, so a
+      -- long line can wrap on one side only and push everything below down.
+      diff_buf_win_enter = function()
+        vim.opt_local.foldenable = false
+        vim.opt_local.wrap = false
+      end,
+    },
+  },
+  keys = {
+    { "<leader>gd", "<cmd>DiffviewOpen<CR>", desc = "Review uncommitted changes" },
+    { "<leader>gD", function()
+        vim.ui.input({ prompt = "Diff against (e.g. main, main...HEAD): " }, function(rev)
+          if rev and rev ~= "" then vim.cmd("DiffviewOpen " .. rev) end
+        end)
+      end, desc = "Diff against branch/rev" },
+    { "<leader>gh", "<cmd>DiffviewFileHistory %<CR>", desc = "History of this file" },
+    { "<leader>gH", "<cmd>DiffviewFileHistory<CR>", desc = "History of repo" },
+    { "<leader>gc", "<cmd>DiffviewClose<CR>", desc = "Close diffview" },
+  },
 },
 
   {

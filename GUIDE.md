@@ -343,21 +343,33 @@ In the file list:
 | `X` | restore the file to the left-hand version (discards changes) |
 | `R` | refresh |
 
-**Where did the rest of the file go?** The unchanged parts are folded, not
-missing. Each fold shows as a line like `+-- 142 lines`. To see the whole
-file:
+**Whole file, no folds.** Diffview shows the entire file by default, like VS
+Code (a hook in the diffview block of `init.lua` turns folding off). If you
+want stock Vim's view, which hides unchanged stretches behind folds such as
+`+-- 142 lines`, press `zi` in a diff window. Once folds are on:
 
 | Key | Command | Action |
 |---|---|---|
+| `zi` | `:set foldenable!` | turn folding on / off for the window |
 | `zR` | `:%foldopen!` | open all folds |
 | `zM` | `:%foldclose` | close all folds |
 | `zo` / `zc` | `:foldopen` / `:foldclose` | open / close the fold here |
 | `za` | | toggle the fold here |
-| `zi` | `:set foldenable!` | turn folding on / off for the window |
-| | `:windo set nofoldenable` | whole file in **both** panes at once |
+| | `:windo set foldenable!` | toggle folding in **both** panes at once |
 
 The keys only affect the window the cursor is in. Use the `:windo` form to
 change both sides of the diff.
+
+**Long lines don't wrap** in diffs, so the two sides stay lined up row for row.
+(With wrapping on, a long line could wrap on one side only, and every line
+below it would drift out of line.) To read past the right edge, scroll
+sideways; both panes move together:
+
+| Key | Action |
+|---|---|
+| `zl` / `zh` | scroll right / left one column |
+| `zL` / `zH` | scroll right / left half a screen |
+| `$` / `0` | jump to end / start of the line (scrolls if needed) |
 
 ### History
 
